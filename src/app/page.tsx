@@ -37,7 +37,7 @@ export default function WelcomePage() {
             id="pekerjaan"
             value={pekerjaan}
             onChange={(e) => setPekerjaan(e.target.value)}
-            placeholder="Ketik nama (opsional)..."
+            placeholder="Ketik nama anonim..."
             className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           />
           <p className="text-xs text-slate-500 mt-2">
