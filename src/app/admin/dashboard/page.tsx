@@ -4,28 +4,50 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutDashboard, FileText, BarChart3, Settings, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  const [totalResponden, setTotalResponden] = useState(0);
+  const [totalLayanan, setTotalLayanan] = useState(3);
 
   useEffect(() => {
-    // Cek apakah sudah login
     const auth = sessionStorage.getItem("admin_auth");
     if (!auth) {
       router.push("/admin/login");
     } else {
       setIsAuth(true);
+      fetchDashboardData();
     }
   }, [router]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const { count: countPengemudi } = await supabase.from('survey_pengemudi').select('*', { count: 'exact', head: true });
+      const { count: countKantin } = await supabase.from('survey_kantin').select('*', { count: 'exact', head: true });
+      const { count: countSecurity } = await supabase.from('survey_security').select('*', { count: 'exact', head: true });
+      const { count: countDynamicResp } = await supabase.from('responses').select('*', { count: 'exact', head: true });
+      
+      const total = (countPengemudi || 0) + (countKantin || 0) + (countSecurity || 0) + (countDynamicResp || 0);
+      setTotalResponden(total);
+
+      // Active Dynamic Services
+      const { count: countDynamicSrv } = await supabase.from('services').select('*', { count: 'exact', head: true }).eq('is_active', true);
+      setTotalLayanan(3 + (countDynamicSrv || 0));
+    } catch (error) {
+      console.error("Error fetching respondents:", error);
+    }
+  };
 
   const handleLogout = () => {
     sessionStorage.removeItem("admin_auth");
     router.push("/admin/login");
   };
 
-  if (!isAuth) return null; // Jangan tampilkan apa-apa sebelum dipastikan login
+  if (!isAuth) return null;
 
   return (
     <div className="flex h-screen bg-slate-50 flex-col md:flex-row overflow-hidden">
@@ -77,7 +99,7 @@ export default function AdminDashboard() {
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-slate-800 mb-2">Selamat Datang, Admin!</h1>
-          <p className="text-slate-500 mb-8">Ini adalah pusat kendali aplikasi Kritik & Saran KIAS.</p>
+          <p className="text-slate-500 mb-8">Ini adalah pusat kendali aplikasi Kuesioner Kepuasan Layanan GA.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -87,7 +109,7 @@ export default function AdminDashboard() {
                   <FileText className="w-5 h-5" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-slate-800">0</p>
+              <p className="text-3xl font-bold text-slate-800">{totalLayanan}</p>
             </div>
 
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -97,17 +119,17 @@ export default function AdminDashboard() {
                   <BarChart3 className="w-5 h-5" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-slate-800">0</p>
+              <p className="text-3xl font-bold text-slate-800">{totalResponden}</p>
             </div>
           </div>
 
           <div className="mt-10 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 mb-4">Langkah Selanjutnya</h3>
             <p className="text-slate-600 mb-4">
-              Database sudah direset. Saat ini belum ada form layanan yang aktif. Anda harus membuat form layanan pertama Anda.
+              Anda dapat melihat dan menganalisis hasil masukan (feedback) dari seluruh responden yang telah mengisi kuesioner.
             </p>
-            <Link href="/admin/services" className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-              Buat Form Layanan Baru
+            <Link href="/admin/results" className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+              Lihat Hasil Survey
             </Link>
           </div>
         </div>

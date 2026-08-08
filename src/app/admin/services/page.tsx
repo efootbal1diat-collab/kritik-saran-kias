@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import { Plus, Edit2, Trash2, LayoutList, Car, Utensils, ShieldCheck, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, LayoutList, Car, Utensils, ShieldCheck, AlertCircle, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ServicesManager() {
@@ -31,10 +31,8 @@ export default function ServicesManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      // Update
       await supabase.from("services").update(formData).eq("id", editingId);
     } else {
-      // Create
       await supabase.from("services").insert([formData]);
     }
     setShowModal(false);
@@ -63,6 +61,30 @@ export default function ServicesManager() {
     return <AlertCircle className="w-5 h-5 text-slate-500" />;
   };
 
+  const staticServices = [
+    {
+      id: "pengemudi",
+      name: "A. Layanan Pengemudi",
+      description: "Survey kepuasan layanan driver dan transport.",
+      icon: <Car className="w-5 h-5 text-blue-500" />,
+      url: "/form/pengemudi"
+    },
+    {
+      id: "kantin",
+      name: "B. Layanan Kantin/Catering",
+      description: "Survey kepuasan kebersihan, kualitas rasa, dan pelayanan kantin.",
+      icon: <Utensils className="w-5 h-5 text-orange-500" />,
+      url: "/form/kantin"
+    },
+    {
+      id: "security",
+      name: "C. Layanan Security",
+      description: "Survey kepuasan profesionalisme dan tanggap darurat security.",
+      icon: <ShieldCheck className="w-5 h-5 text-green-500" />,
+      url: "/form/security"
+    }
+  ];
+
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
@@ -73,30 +95,64 @@ export default function ServicesManager() {
           <p className="text-slate-500 mt-1">Buat dan atur jenis layanan yang ingin disurvey.</p>
         </div>
         <div className="flex space-x-3">
-          <Link href="/admin/dashboard" className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium">
+          <Link href="/admin/dashboard" className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium transition-colors">
             Kembali
           </Link>
           <button 
             onClick={() => { setShowModal(true); setEditingId(null); setFormData({ name: "", description: "", icon_type: "Car" }); }}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center transition-colors"
           >
-            <Plus className="w-4 h-4 mr-2" /> Tambah Layanan
+            <Plus className="w-4 h-4 mr-2" /> Tambah Layanan Baru
           </button>
         </div>
       </div>
 
+      <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Layanan Utama (Sistem)</h2>
+      <p className="text-sm text-slate-500 mb-4">Layanan baku yang sudah terintegrasi dan memiliki desain form khusus. Tidak dapat dihapus.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        {staticServices.map((service) => (
+          <div key={service.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+            <div className="flex items-center mb-4">
+              <div className="p-3 bg-slate-50 rounded-lg mr-4 border border-slate-100">
+                {service.icon}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-slate-800">{service.name}</h3>
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                  Aktif (Sistem)
+                </span>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 mb-6 flex-grow">{service.description}</p>
+            
+            <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
+              <Link 
+                href={service.url}
+                target="_blank"
+                className="flex-grow flex items-center justify-center bg-blue-50 text-blue-700 hover:bg-blue-100 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Lihat Form Publik <ExternalLink className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Layanan Tambahan (Dinamis)</h2>
+      <p className="text-sm text-slate-500 mb-4">Kuesioner kustom yang bisa Anda buat dan ubah pertanyaannya secara bebas.</p>
+      
       {loading ? (
-        <p className="text-slate-500">Memuat data...</p>
+        <p className="text-slate-500">Memuat data layanan dinamis...</p>
       ) : services.length === 0 ? (
         <div className="text-center p-12 bg-white border border-slate-200 rounded-xl shadow-sm">
           <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-slate-800">Belum Ada Layanan</h3>
-          <p className="text-slate-500 mt-1">Klik tombol 'Tambah Layanan' untuk membuat kuesioner pertama Anda.</p>
+          <h3 className="text-lg font-medium text-slate-800">Belum Ada Layanan Tambahan</h3>
+          <p className="text-slate-500 mt-1">Klik tombol 'Tambah Layanan Baru' di atas untuk membuat kuesioner dinamis pertama Anda.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service) => (
-            <div key={service.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+            <div key={service.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow">
               <div className="flex items-center mb-4">
                 <div className="p-3 bg-slate-50 rounded-lg mr-4 border border-slate-100">
                   {renderIcon(service.icon_type)}
@@ -143,7 +199,7 @@ export default function ServicesManager() {
                   type="text" 
                   value={formData.name} 
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="Contoh: Layanan Pengemudi"
+                  placeholder="Contoh: Layanan Kebersihan"
                   className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   required 
                 />
@@ -153,7 +209,7 @@ export default function ServicesManager() {
                 <textarea 
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Survey kepuasan driver..."
+                  placeholder="Survey kebersihan ruangan..."
                   className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   rows={2}
                 />
@@ -165,16 +221,14 @@ export default function ServicesManager() {
                   onChange={(e) => setFormData({...formData, icon_type: e.target.value})}
                   className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                 >
-                  <option value="Car">Mobil / Pengemudi</option>
-                  <option value="Utensils">Garpu & Pisau / Kantin</option>
-                  <option value="ShieldCheck">Perisai / Security</option>
-                  <option value="AlertCircle">Umum / Bulat</option>
+                  <option value="Car">Mobil / Kendaraan</option>
+                  <option value="AlertCircle">Umum / Lainnya</option>
                 </select>
               </div>
               
               <div className="pt-4 flex space-x-3">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg">Batal</button>
-                <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg">Simpan</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors">Batal</button>
+                <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">Simpan</button>
               </div>
             </form>
           </div>

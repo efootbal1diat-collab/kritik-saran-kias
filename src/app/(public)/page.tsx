@@ -23,9 +23,6 @@ export default function WelcomePage() {
       <h1 className="text-2xl font-bold text-center text-slate-800 mb-2">
         Selamat Datang
       </h1>
-      <p className="text-center text-slate-600 mb-8 max-w-sm">
-        Silakan isi survey kepuasan layanan kami. Masukan Anda sangat berarti bagi peningkatan kualitas layanan.
-      </p>
 
       <form onSubmit={handleNext} className="w-full max-w-sm">
         <div className="mb-6">

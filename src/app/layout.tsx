@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kritik & Saran KIAS",
+  title: "Kuesioner Kepuasan Layanan GA",
   description: "Survey Kepuasan Layanan KIAS",
 };
 
