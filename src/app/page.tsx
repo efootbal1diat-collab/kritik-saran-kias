@@ -30,14 +30,14 @@ export default function WelcomePage() {
       <form onSubmit={handleNext} className="w-full max-w-sm">
         <div className="mb-6">
           <label htmlFor="pekerjaan" className="block text-sm font-medium text-slate-700 mb-2">
-            Pekerjaan Anda (Opsional)
+            Masukan nama anonim
           </label>
           <input
             type="text"
             id="pekerjaan"
             value={pekerjaan}
             onChange={(e) => setPekerjaan(e.target.value)}
-            placeholder="Ketik pekerjaan Anda..."
+            placeholder="Ketik nama (opsional)..."
             className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           />
           <p className="text-xs text-slate-500 mt-2">
