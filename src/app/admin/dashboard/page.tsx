@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FileText, BarChart3, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, BarChart3, Settings, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Cek apakah sudah login
@@ -27,10 +28,21 @@ export default function AdminDashboard() {
   if (!isAuth) return null; // Jangan tampilkan apa-apa sebelum dipastikan login
 
   return (
-    <div className="flex h-screen bg-slate-50 flex-col md:flex-row">
+    <div className="flex h-screen bg-slate-50 flex-col md:flex-row overflow-hidden">
+      {/* Mobile Topbar */}
+      <div className="md:hidden flex items-center justify-between bg-white border-b border-slate-200 p-4 shrink-0">
+        <h2 className="text-lg font-bold text-slate-800 flex items-center">
+          <Settings className="mr-2 w-5 h-5 text-blue-600" />
+          Admin Panel
+        </h2>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-600 bg-slate-100 rounded-lg">
+          {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-white border-r border-slate-200 p-6 flex flex-col h-auto md:h-full">
-        <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center">
+      <aside className={`${isSidebarOpen ? 'flex' : 'hidden'} md:flex absolute md:relative z-20 w-full md:w-64 bg-white border-b md:border-r border-slate-200 p-6 flex-col h-[calc(100vh-73px)] md:h-full top-[73px] md:top-0 left-0`}>
+        <h2 className="hidden md:flex text-xl font-bold text-slate-800 mb-8 items-center">
           <Settings className="mr-2 w-6 h-6 text-blue-600" />
           Admin Panel
         </h2>
