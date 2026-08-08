@@ -54,6 +54,12 @@ export default function WelcomePage() {
           <ArrowRight className="ml-2 w-5 h-5" />
         </button>
       </form>
+
+      <div className="mt-12 text-center">
+        <a href="/admin/login" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+          Login Admin GA
+        </a>
+      </div>
     </div>
   );
 }
