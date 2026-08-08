@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import StarRating from "@/components/StarRating";
-import RadioGroup from "@/components/RadioGroup";
+import { StarRating } from "@/components/StarRating";
+import { RadioGroup } from "@/components/RadioGroup";
 
 export default function DynamicServiceForm() {
   const { id } = useParams();
@@ -145,16 +145,16 @@ export default function DynamicServiceForm() {
 
               {q.question_type === "star" && (
                 <StarRating 
-                  rating={Number(answers[q.id] || 0)} 
-                  onRatingChange={(val) => handleAnswerChange(q.id, val)} 
+                  value={Number(answers[q.id] || 0)} 
+                  onChange={(val: number) => handleAnswerChange(q.id, val)} 
                 />
               )}
 
               {q.question_type === "radio" && (
                 <RadioGroup 
                   options={q.options_json || []} 
-                  selected={String(answers[q.id] || "")} 
-                  onChange={(val) => handleAnswerChange(q.id, val)} 
+                  value={String(answers[q.id] || "")} 
+                  onChange={(val: string) => handleAnswerChange(q.id, val)} 
                 />
               )}
 
