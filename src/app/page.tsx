@@ -30,7 +30,7 @@ export default function WelcomePage() {
       <form onSubmit={handleNext} className="w-full max-w-sm">
         <div className="mb-6">
           <label htmlFor="pekerjaan" className="block text-sm font-medium text-slate-700 mb-2">
-            Masukan nama anonim
+            Masukan Nama Anonim
           </label>
           <input
             type="text"
@@ -38,10 +38,11 @@ export default function WelcomePage() {
             value={pekerjaan}
             onChange={(e) => setPekerjaan(e.target.value)}
             placeholder="Ketik nama anonim..."
+            required
             className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           />
           <p className="text-xs text-slate-500 mt-2">
-            *Anda dapat membiarkan ini kosong untuk menjawab secara anonim.
+            *Wajib diisi sebelum melanjutkan.
           </p>
         </div>
 
