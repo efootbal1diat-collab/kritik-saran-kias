@@ -90,8 +90,8 @@ export default function FormKantin() {
     form.kepuasan_keseluruhan > 0;
 
   return (
-    <div className="py-4">
-      <h1 className="text-xl font-bold text-orange-600 mb-2">KUESIONER KEPUASAN LAYANAN KANTIN / CATERING GA</h1>
+    <div className="py-4 max-w-3xl mx-auto">
+      <h1 className="text-xl font-bold text-orange-600 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN KANTIN / CATERING</h1>
       
       <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl mb-6">
         <h2 className="font-semibold text-orange-800 mb-1">Tujuan:</h2>

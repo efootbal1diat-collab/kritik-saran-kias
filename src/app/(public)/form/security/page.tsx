@@ -90,7 +90,7 @@ export default function FormSecurity() {
     form.kepatuhan_sop > 0 && form.komunikasi > 0 && form.kepuasan_keseluruhan > 0;
 
   return (
-    <div className="py-4">
+    <div className="py-4 max-w-3xl mx-auto">
       <h1 className="text-xl font-bold text-green-700 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN SECURITY GA</h1>
       
       <div className="bg-green-50 border border-green-100 p-4 rounded-xl mb-6 mt-4">

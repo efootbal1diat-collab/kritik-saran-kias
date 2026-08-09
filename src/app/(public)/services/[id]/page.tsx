@@ -99,7 +99,7 @@ export default function DynamicServiceForm() {
   if (error && !service) return <div className="text-center py-10 text-red-500 font-medium">{error}</div>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mb-12">
+    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mb-12">
       <div className="bg-indigo-600 p-8 text-white">
         <h1 className="text-2xl font-bold mb-2">{service?.name}</h1>
         <p className="text-indigo-100">{service?.description}</p>

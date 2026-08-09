@@ -89,7 +89,7 @@ export default function FormPengemudi() {
     form.komunikasi > 0 && form.kepuasan_keseluruhan > 0;
 
   return (
-    <div className="py-4">
+    <div className="py-4 max-w-3xl mx-auto">
       <h1 className="text-xl font-bold text-blue-700 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN DRIVER / TRANSPORT GA</h1>
       
       <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 mt-4">
