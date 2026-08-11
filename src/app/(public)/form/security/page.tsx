@@ -42,7 +42,7 @@ export default function FormSecurity() {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    nama_security: "",
+    nama_security: "Petugas Security",
     sikap_petugas: 0,
     respons_pelayanan: 0,
     rasa_aman: 0,
@@ -84,49 +84,22 @@ export default function FormSecurity() {
     }
   };
 
-  const isFormValid = form.nama_security && 
-    form.sikap_petugas > 0 && form.respons_pelayanan > 0 && form.rasa_aman > 0 && 
+  const isFormValid = form.sikap_petugas > 0 && form.respons_pelayanan > 0 && form.rasa_aman > 0 && 
     form.ketegasan_kedisiplinan > 0 && form.kontrol_akses > 0 && form.penanganan_kejadian > 0 && 
     form.kepatuhan_sop > 0 && form.komunikasi > 0 && form.kepuasan_keseluruhan > 0;
 
   return (
     <div className="py-4 max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-green-700 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN SECURITY GA</h1>
+      <h1 className="text-xl font-bold text-slate-800 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN SECURITY</h1>
       
-      <div className="bg-green-50 border border-green-100 p-4 rounded-xl mb-6 mt-4">
-        <h2 className="font-semibold text-green-800 mb-1">Tujuan:</h2>
-        <p className="text-sm text-green-700 mb-3">Untuk mengetahui tingkat kepuasan pengguna terhadap layanan Security GA serta mendapatkan masukan untuk peningkatan kualitas pelayanan.</p>
-        <h2 className="font-semibold text-green-800 mb-1">Petunjuk Pengisian:</h2>
-        <p className="text-sm text-green-700">Berikan penilaian sesuai pengalaman Anda menggunakan layanan Security GA.</p>
+      <div className="bg-slate-100 border border-slate-200 p-4 rounded-xl mb-6 mt-4">
+        <h2 className="font-semibold text-slate-800 mb-1">Tujuan:</h2>
+        <p className="text-sm text-slate-700 mb-3">Untuk mengetahui tingkat kepuasan pengguna terhadap layanan Security serta mendapatkan masukan untuk peningkatan kualitas pelayanan.</p>
+        <h2 className="font-semibold text-slate-800 mb-1">Petunjuk Pengisian:</h2>
+        <p className="text-sm text-slate-700">Berikan penilaian sesuai pengalaman Anda menggunakan layanan Security.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold text-slate-800">Pilih Pos / Area Security:</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {POS_SECURITY.map((p) => (
-              <label
-                key={p}
-                className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                  form.nama_security === p
-                    ? "border-green-600 bg-green-50"
-                    : "border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 shrink-0 ${form.nama_security === p ? 'border-green-600' : 'border-slate-300'}`}>
-                  {form.nama_security === p && <div className="w-2.5 h-2.5 bg-green-600 rounded-full" />}
-                </div>
-                <input
-                  type="radio"
-                  className="hidden"
-                  checked={form.nama_security === p}
-                  onChange={() => handleChange("nama_security", p)}
-                />
-                <span className={`text-sm font-medium ${form.nama_security === p ? 'text-green-900' : 'text-slate-700'}`}>{p}</span>
-              </label>
-            ))}
-          </div>
-        </div>
 
         <div className="mt-4">
           <div className="mb-4">
@@ -200,7 +173,7 @@ export default function FormSecurity() {
             <textarea
               rows={3}
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-shadow"
-              placeholder="...................................................................................................."
+              placeholder="Tuliskan masukan positif Anda di sini..."
               value={form.saran_baik}
               onChange={(e) => handleChange("saran_baik", e.target.value)}
             />
@@ -211,7 +184,7 @@ export default function FormSecurity() {
             <textarea
               rows={3}
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-shadow"
-              placeholder="...................................................................................................."
+              placeholder="Tuliskan saran perbaikan Anda di sini..."
               value={form.saran_perbaikan}
               onChange={(e) => handleChange("saran_perbaikan", e.target.value)}
             />

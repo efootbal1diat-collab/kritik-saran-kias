@@ -3,18 +3,26 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { BarChart3, LayoutDashboard, FileText, Settings, LogOut, Menu, X, Download } from "lucide-react";
+import { ensureServicesSeeded } from "@/lib/seedServices";
+import { BarChart3, LayoutDashboard, FileText, LogOut, Menu, X, Download, Inbox } from "lucide-react";
 import Link from "next/link";
+
+interface ServiceItem {
+  id: string;
+  name: string;
+  icon_type: string;
+}
 
 export default function AdminResults() {
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const [activeTab, setActiveTab] = useState<string>("pengemudi");
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("");
+  
   const [data, setData] = useState<any[]>([]);
   const [dynamicQuestions, setDynamicQuestions] = useState<any[]>([]);
-  const [dynamicServices, setDynamicServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -23,46 +31,118 @@ export default function AdminResults() {
       router.push("/admin/login");
     } else {
       setIsAuth(true);
-      fetchDynamicServices();
-      fetchData("pengemudi");
+      fetchServices();
     }
   }, [router]);
 
-  const fetchDynamicServices = async () => {
-    const { data } = await supabase.from("services").select("*").order("created_at", { ascending: true });
-    if (data) setDynamicServices(data);
+  useEffect(() => {
+    if (activeTab) {
+      fetchData(activeTab);
+    }
+  }, [activeTab]);
+
+  const fetchServices = async () => {
+    try {
+      await ensureServicesSeeded();
+
+      const { data, error } = await supabase
+        .from("services")
+        .select("id, name, icon_type")
+        .eq("is_active", true)
+        .order("created_at", { ascending: true });
+
+      if (!error && data) {
+        const sorted = [...data].sort((a, b) => {
+          const order = ["Layanan Pengemudi", "Layanan Kantin / Catering", "Layanan Security"];
+          const idxA = order.indexOf(a.name);
+          const idxB = order.indexOf(b.name);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.name.localeCompare(b.name);
+        });
+
+        setServices(sorted);
+        if (sorted.length > 0 && !activeTab) {
+          setActiveTab(sorted[0].id);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const fetchData = async (tab: string) => {
+  const fetchData = async (serviceId: string) => {
     setLoading(true);
     setDynamicQuestions([]);
+    setData([]);
     
     try {
-      if (tab === "pengemudi") {
-        const { data: result, error } = await supabase.from("survey_pengemudi").select("*").order("created_at", { ascending: false });
-        if (error) throw error;
-        setData(result || []);
-      } else if (tab === "kantin") {
-        const { data: result, error } = await supabase.from("survey_kantin").select("*").order("created_at", { ascending: false });
-        if (error) throw error;
-        setData(result || []);
-      } else if (tab === "security") {
-        const { data: result, error } = await supabase.from("survey_security").select("*").order("created_at", { ascending: false });
-        if (error) throw error;
-        setData(result || []);
-      } else {
-        // Dynamic Service
-        const { data: qData } = await supabase.from("questions").select("*").eq("service_id", tab).order("order_number", { ascending: true });
-        if (qData) setDynamicQuestions(qData);
-
-        const { data: result, error } = await supabase.from("responses")
-          .select(`*, answers(*)`)
-          .eq("service_id", tab)
-          .order("created_at", { ascending: false });
-        if (error) throw error;
+      // 1. Fetch questions for header
+      const { data: qData } = await supabase
+        .from("questions")
+        .select("*")
+        .eq("service_id", serviceId)
+        .order("order_number", { ascending: true });
         
-        setData(result || []);
+      if (qData) setDynamicQuestions(qData);
+
+      // 2. Fetch responses from dynamic table
+      const { data: result, error } = await supabase
+        .from("responses")
+        .select(`*, answers(*)`)
+        .eq("service_id", serviceId)
+        .order("created_at", { ascending: false });
+        
+      if (error) throw error;
+      let combined = result || [];
+
+      // 3. Fallback for legacy tables if applicable
+      const activeObj = services.find(s => s.id === serviceId);
+      const serviceName = activeObj?.name || "";
+
+      if (serviceName.includes("Pengemudi") || serviceName.includes("Driver")) {
+        const { data: leg } = await supabase.from("survey_pengemudi").select("*").order("created_at", { ascending: false });
+        if (leg && leg.length > 0) {
+          const mappedLeg = leg.map(l => ({
+            id: l.id,
+            respondent_name: l.pekerjaan || "Karyawan",
+            vendor_name: l.nama_pengemudi || "-",
+            created_at: l.created_at,
+            is_legacy: true,
+            legacy_data: l
+          }));
+          combined = [...combined, ...mappedLeg];
+        }
+      } else if (serviceName.includes("Kantin") || serviceName.includes("Catering")) {
+        const { data: leg } = await supabase.from("survey_kantin").select("*").order("created_at", { ascending: false });
+        if (leg && leg.length > 0) {
+          const mappedLeg = leg.map(l => ({
+            id: l.id,
+            respondent_name: l.pekerjaan || "Karyawan",
+            vendor_name: l.nama_kantin || "-",
+            created_at: l.created_at,
+            is_legacy: true,
+            legacy_data: l
+          }));
+          combined = [...combined, ...mappedLeg];
+        }
+      } else if (serviceName.includes("Security")) {
+        const { data: leg } = await supabase.from("survey_security").select("*").order("created_at", { ascending: false });
+        if (leg && leg.length > 0) {
+          const mappedLeg = leg.map(l => ({
+            id: l.id,
+            respondent_name: l.pekerjaan || "Karyawan",
+            vendor_name: l.pos_security || "-",
+            created_at: l.created_at,
+            is_legacy: true,
+            legacy_data: l
+          }));
+          combined = [...combined, ...mappedLeg];
+        }
       }
+
+      setData(combined);
     } catch (err) {
       console.error(err);
     } finally {
@@ -70,9 +150,41 @@ export default function AdminResults() {
     }
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    fetchData(tab);
+  const exportCSV = () => {
+    if (data.length === 0) return;
+    const activeObj = services.find(s => s.id === activeTab);
+    const serviceName = activeObj?.name || "Survey";
+
+    let headers = ["Tanggal", "Responden", "Target / Vendor"];
+    dynamicQuestions.forEach(q => {
+      const shortLabel = q.question_text.replace(/\s*\(.*?\)\s*/g, "");
+      headers.push(`"${shortLabel}"`);
+    });
+
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+
+    data.forEach(row => {
+      let rowVals = [
+        `"${new Date(row.created_at).toLocaleDateString("id-ID")}"`,
+        `"${row.respondent_name || '-'}"`,
+        `"${row.vendor_name || '-'}"`
+      ];
+
+      dynamicQuestions.forEach(q => {
+        const ansObj = (row.answers || []).find((a: any) => a.question_id === q.id);
+        rowVals.push(`"${ansObj ? ansObj.answer_value : '-'}"`);
+      });
+
+      csvContent += rowVals.join(",") + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Hasil_Survey_${serviceName.replace(/\s+/g, "_")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleLogout = () => {
@@ -80,16 +192,23 @@ export default function AdminResults() {
     router.push("/admin/login");
   };
 
+  const renderIcon = (iconStr: string) => {
+    if (iconStr === "Car") return "🚐";
+    if (iconStr === "Utensils") return "🍱";
+    if (iconStr === "ShieldCheck") return "🛡️";
+    return "📋";
+  };
+
   if (!isAuth) return null;
 
   return (
-    <div className="flex h-screen bg-slate-50 flex-col md:flex-row overflow-hidden">
+    <div className="flex h-screen bg-slate-50 flex-col md:flex-row overflow-hidden font-sans">
       {/* Mobile Topbar */}
       <div className="md:hidden flex items-center justify-between bg-white border-b border-slate-200 p-4 shrink-0">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center">
-          <Settings className="mr-2 w-5 h-5 text-blue-600" />
-          Admin Panel
-        </h2>
+        <div className="flex items-center gap-2">
+          <img src="/logo-kias.jpg" alt="KIAS" className="h-7 w-auto object-contain" />
+          <h2 className="text-base font-bold text-slate-800">Admin Panel</h2>
+        </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-600 bg-slate-100 rounded-lg">
           {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -97,10 +216,10 @@ export default function AdminResults() {
 
       {/* Sidebar Navigation */}
       <aside className={`${isSidebarOpen ? 'flex' : 'hidden'} md:flex absolute md:relative z-20 w-full md:w-64 bg-white border-b md:border-r border-slate-200 p-6 flex-col h-[calc(100vh-73px)] md:h-full top-[73px] md:top-0 left-0`}>
-        <h2 className="hidden md:flex text-xl font-bold text-slate-800 mb-8 items-center">
-          <Settings className="mr-2 w-6 h-6 text-blue-600" />
-          Admin Panel
-        </h2>
+        <div className="hidden md:flex flex-col mb-6">
+          <img src="/logo-kias.jpg" alt="PT. Karanganyar Indo Auto Systems" className="h-10 w-auto object-contain mb-2 self-start" />
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">ADMIN PANEL GA</h2>
+        </div>
         
         <nav className="flex-1 space-y-2">
           <Link href="/admin/dashboard" className="flex items-center px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg font-medium transition-colors">
@@ -130,193 +249,109 @@ export default function AdminResults() {
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-800">Hasil Survey (GA)</h1>
-              <p className="text-slate-500 mt-1">Data feedback yang masuk dari pengguna layanan GA.</p>
+              <p className="text-slate-500 mt-1">Data feedback 100% dinamis dari engine kuesioner.</p>
             </div>
             {data.length > 0 && (
-              <button className="flex items-center px-4 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 transition-colors">
+              <button 
+                onClick={exportCSV}
+                className="flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm cursor-pointer"
+              >
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </button>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-            <div className="flex flex-col md:flex-row border-b border-slate-200">
-              <button 
-                onClick={() => handleTabChange("pengemudi")}
-                className={`py-4 px-6 text-sm font-semibold transition-colors ${activeTab === 'pengemudi' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-500 hover:bg-slate-50'}`}
+          {/* Dynamic Tab Selector */}
+          <div className="bg-white p-4 rounded-t-xl border border-gray-200 shadow-xs flex flex-wrap gap-2 border-b-0">
+            {services.map((service) => (
+              <button
+                key={service.id}
+                onClick={() => setActiveTab(service.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                  activeTab === service.id
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
               >
-                Pengemudi
+                <span>{renderIcon(service.icon_type)}</span> {service.name}
               </button>
-              <button 
-                onClick={() => handleTabChange("kantin")}
-                className={`py-4 px-6 text-sm font-semibold transition-colors ${activeTab === 'kantin' ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50/50' : 'text-slate-500 hover:bg-slate-50'}`}
-              >
-                Kantin
-              </button>
-              <button 
-                onClick={() => handleTabChange("security")}
-                className={`py-4 px-6 text-sm font-semibold transition-colors ${activeTab === 'security' ? 'text-green-600 border-b-2 border-green-600 bg-green-50/50' : 'text-slate-500 hover:bg-slate-50'}`}
-              >
-                Security
-              </button>
-              
-              {dynamicServices.length > 0 && (
-                <div className="py-2 px-4 flex items-center md:ml-auto border-t md:border-t-0 md:border-l border-slate-200">
-                  <select 
-                    value={!['pengemudi', 'kantin', 'security'].includes(activeTab) ? activeTab : ""} 
-                    onChange={(e) => {
-                      if (e.target.value) handleTabChange(e.target.value);
-                    }}
-                    className={`text-sm p-2 rounded-lg border outline-none font-semibold ${!['pengemudi', 'kantin', 'security'].includes(activeTab) ? 'text-indigo-600 border-indigo-600 bg-indigo-50/50' : 'text-slate-500 border-slate-200'}`}
-                  >
-                    <option value="" disabled>Layanan Lainnya (Dinamis)...</option>
-                    {dynamicServices.map(srv => (
-                      <option key={srv.id} value={srv.id}>{srv.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-6 overflow-x-auto">
-              {loading ? (
-                <div className="py-12 text-center text-slate-500">Memuat data responden...</div>
-              ) : data.length === 0 ? (
-                <div className="py-12 text-center text-slate-500">Belum ada data respons untuk layanan ini.</div>
-              ) : (
-                <table className="w-full text-left border-collapse whitespace-nowrap">
+            ))}
+          </div>
+
+          {/* Table Container */}
+          <div className="bg-white border border-gray-200 rounded-b-xl shadow-xs overflow-hidden">
+            {loading ? (
+              <div className="text-center py-12 text-slate-500">Memuat hasil survey...</div>
+            ) : data.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <Inbox className="w-12 h-12 text-slate-300 mb-3" />
+                <p className="text-base font-semibold text-slate-700">Belum Ada Respon</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Respon yang dikirim oleh pengguna akan muncul di tabel ini.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Waktu (UTC)</th>
-                      
-                      {activeTab === "pengemudi" && (
-                        <>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Pekerjaan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Nama Pengemudi</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Kepuasan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Ketepatan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Keselamatan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Saran (Baik)</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Saran (Perbaikan)</th>
-                        </>
-                      )}
-                      
-                      {activeTab === "kantin" && (
-                        <>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Pekerjaan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Vendor Kantin</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Kepuasan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Rasa</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Higiene</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Saran (Baik)</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Saran (Perbaikan)</th>
-                        </>
-                      )}
-
-                      {activeTab === "security" && (
-                        <>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Pekerjaan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Pos / Area</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Kepuasan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Sikap</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Rasa Aman</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Saran (Baik)</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Saran (Perbaikan)</th>
-                        </>
-                      )}
-
-                      {!["pengemudi", "kantin", "security"].includes(activeTab) && (
-                        <>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Nama/Pekerjaan</th>
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Nama Vendor</th>
-                          {dynamicQuestions.map(q => (
-                            <th key={q.id} className="py-3 px-4 font-semibold text-slate-700 bg-slate-50 truncate max-w-[150px]" title={q.question_text}>
-                              {q.question_text}
-                            </th>
-                          ))}
-                          <th className="py-3 px-4 font-semibold text-slate-700 bg-slate-50">Komentar/Keluhan</th>
-                        </>
-                      )}
-                      
+                    <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      <th className="py-3.5 px-4">Waktu</th>
+                      <th className="py-3.5 px-4">Responden</th>
+                      <th className="py-3.5 px-4">Target / Vendor</th>
+                      {dynamicQuestions.map((q) => (
+                        <th key={q.id} className="py-3.5 px-4 min-w-[150px]">
+                          {q.question_text.replace(/\s*\(.*?\)\s*/g, "")}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody>
-                    {data.map((row) => {
-                      // Helper to get answer for dynamic
-                      const getAnswer = (qId: string) => {
-                        if (!row.answers) return "-";
-                        const ans = row.answers.find((a: any) => a.question_id === qId);
-                        return ans ? ans.answer_value : "-";
-                      };
+                  <tbody className="divide-y divide-slate-200 text-sm text-slate-700">
+                    {data.map((row) => (
+                      <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500 font-medium">
+                          {new Date(row.created_at).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })}
+                        </td>
+                        <td className="py-3.5 px-4 font-medium text-slate-900">
+                          {row.respondent_name || "Anonim"}
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-blue-700">
+                          {row.vendor_name || "-"}
+                        </td>
 
-                      return (
-                        <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="py-3 px-4 text-slate-600">{new Date(row.created_at).toLocaleString()}</td>
-                          
-                          {activeTab === "pengemudi" && (
-                            <>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.pekerjaan || "-"}</td>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.nama_pengemudi}</td>
-                              <td className="py-3 px-4 text-blue-600 font-bold">⭐ {row.kepuasan_keseluruhan}</td>
-                              <td className="py-3 px-4 text-slate-600">{row.ketepatan_waktu}/4</td>
-                              <td className="py-3 px-4 text-slate-600">{row.keselamatan_berkendara}/4</td>
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.saran_baik}>{row.saran_baik || "-"}</td>
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.saran_perbaikan}>{row.saran_perbaikan || "-"}</td>
-                            </>
-                          )}
-
-                          {activeTab === "kantin" && (
-                            <>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.pekerjaan || "-"}</td>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.nama_kantin}</td>
-                              <td className="py-3 px-4 text-orange-600 font-bold">⭐ {row.kepuasan_keseluruhan}</td>
-                              <td className="py-3 px-4 text-slate-600">{row.kualitas_rasa}/4</td>
-                              <td className="py-3 px-4 text-slate-600">{row.kebersihan_higiene}/4</td>
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.saran_baik}>{row.saran_baik || "-"}</td>
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.saran_perbaikan}>{row.saran_perbaikan || "-"}</td>
-                            </>
-                          )}
-
-                          {activeTab === "security" && (
-                            <>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.pekerjaan || "-"}</td>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.nama_security}</td>
-                              <td className="py-3 px-4 text-green-600 font-bold">⭐ {row.kepuasan_keseluruhan}</td>
-                              <td className="py-3 px-4 text-slate-600">{row.sikap_petugas}/4</td>
-                              <td className="py-3 px-4 text-slate-600">{row.rasa_aman}/4</td>
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.saran_baik}>{row.saran_baik || "-"}</td>
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.saran_perbaikan}>{row.saran_perbaikan || "-"}</td>
-                            </>
-                          )}
-
-                          {!["pengemudi", "kantin", "security"].includes(activeTab) && (
-                            <>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.respondent_name || "-"}</td>
-                              <td className="py-3 px-4 text-slate-800 font-medium">{row.vendor_name || "-"}</td>
-                              {dynamicQuestions.map(q => (
-                                <td key={q.id} className="py-3 px-4 text-slate-600 truncate max-w-[150px]" title={getAnswer(q.id)}>
-                                  {q.question_type === 'star' && getAnswer(q.id) !== "-" ? `⭐ ${getAnswer(q.id)}` : getAnswer(q.id)}
-                                </td>
-                              ))}
-                              <td className="py-3 px-4 text-slate-600 truncate max-w-[200px]" title={row.feedback_text}>
-                                {row.feedback_text || "-"}
-                              </td>
-                            </>
-                          )}
-
-                        </tr>
-                      );
-                    })}
+                        {dynamicQuestions.map((q) => {
+                          const ansObj = (row.answers || []).find((a: any) => a.question_id === q.id);
+                          const val = ansObj ? ansObj.answer_value : "-";
+                          return (
+                            <td key={q.id} className="py-3.5 px-4">
+                              {q.question_type === "star" ? (
+                                <span className="font-bold text-amber-500 flex items-center gap-1">
+                                  {val} ⭐
+                                </span>
+                              ) : (
+                                <span className="text-slate-800">{val}</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+
         </div>
       </main>
     </div>

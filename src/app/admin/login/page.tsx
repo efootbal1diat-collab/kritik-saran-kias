@@ -42,6 +42,13 @@ export default function AdminLogin() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-sm p-8 border border-slate-200">
+        <div className="flex justify-center mb-6">
+          <img
+            src="/logo-kias.jpg"
+            alt="PT. Karanganyar Indo Auto Systems"
+            className="h-12 w-auto object-contain"
+          />
+        </div>
         <h1 className="text-2xl font-bold text-center text-slate-800 mb-2">Login Admin GA</h1>
         <p className="text-center text-slate-500 mb-6 text-sm">Masukkan password untuk mengakses Dashboard Analytics</p>
 
@@ -53,7 +60,7 @@ export default function AdminLogin() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-300 ease-in-out"
               required
             />
           </div>
@@ -63,7 +70,7 @@ export default function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 ease-in-out hover:-translate-y-1 shadow-sm active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? "Memeriksa..." : "Masuk Dashboard"}
           </button>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { StarRating } from "@/components/StarRating";
 
-const KANTIN = ["Kantin A", "Kantin B", "Kantin C", "Catering / Vendor"];
+const KANTIN = ["Kantin A (Bu Ratna)", "Kantin B (Bu Saminem)", "Kantin C (Bu Sumini)", "Catering / Vendor"];
 
 // Komponen Radio Button 1-4 Khusus Skala Penilaian
 function RadioScale({ label, value, onChange }: { label: string, value: number, onChange: (val: number) => void }) {
@@ -91,13 +91,13 @@ export default function FormKantin() {
 
   return (
     <div className="py-4 max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-orange-600 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN KANTIN / CATERING</h1>
+      <h1 className="text-xl font-bold text-slate-800 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN KANTIN / CATERING</h1>
       
-      <div className="bg-orange-50 border border-orange-100 p-4 rounded-xl mb-6">
-        <h2 className="font-semibold text-orange-800 mb-1">Tujuan:</h2>
-        <p className="text-sm text-orange-700 mb-3">Untuk mengetahui tingkat kepuasan pengguna terhadap layanan Kantin/Catering GA serta mendapatkan masukan untuk peningkatan kualitas pelayanan.</p>
-        <h2 className="font-semibold text-orange-800 mb-1">Petunjuk Pengisian:</h2>
-        <p className="text-sm text-orange-700">Berikan penilaian sesuai pengalaman Anda menggunakan layanan Kantin/Catering GA.</p>
+      <div className="bg-slate-100 border border-slate-200 p-4 rounded-xl mb-6 mt-4">
+        <h2 className="font-semibold text-slate-800 mb-1">Tujuan:</h2>
+        <p className="text-sm text-slate-700 mb-3">Untuk mengetahui tingkat kepuasan pengguna terhadap layanan Kantin/Catering serta mendapatkan masukan untuk peningkatan kualitas pelayanan.</p>
+        <h2 className="font-semibold text-slate-800 mb-1">Petunjuk Pengisian:</h2>
+        <p className="text-sm text-slate-700">Berikan penilaian sesuai pengalaman Anda menggunakan layanan Kantin/Catering.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -130,48 +130,52 @@ export default function FormKantin() {
 
         <div className="mt-4">
           <div className="mb-4">
-            <h2 className="font-bold text-slate-800">A. Penilaian Layanan Kantin / Catering</h2>
-            <p className="text-xs text-slate-500">Skala Penilaian: 4 = Sangat Baik | 3 = Baik | 2 = Kurang Baik | 1 = Tidak Baik</p>
+            <h2 className="font-bold text-slate-800">Skala Penilaian: Nilai</h2>
+            <p className="text-xs text-slate-600">Keterangan :<br/>4 - Sangat Baik ; 3 - Baik ; 2 - Kurang Baik ; 1 - Tidak Baik</p>
+          </div>
+          
+          <div className="mb-4 mt-2">
+            <h2 className="font-bold text-slate-800">B. Penilaian Layanan Kantin / Catering</h2>
           </div>
           
           <div className="flex flex-col gap-4">
             <RadioScale 
-              label="Kualitas Rasa Makanan (Bagaimana Anda menilai kualitas rasa makanan yang disediakan?)" 
+              label="1. Kualitas Rasa Makanan (Bagaimana Anda menilai kualitas rasa makanan yang disediakan?)" 
               value={form.kualitas_rasa} 
               onChange={(v) => handleChange("kualitas_rasa", v)} 
             />
             <RadioScale 
-              label="Kebersihan & Higiene Makanan (Bagaimana Anda menilai kebersihan makanan dan proses penyajiannya?)" 
+              label="2. Kebersihan & Higiene Makanan (Bagaimana Anda menilai kebersihan makanan dan proses penyajiannya?)" 
               value={form.kebersihan_higiene} 
               onChange={(v) => handleChange("kebersihan_higiene", v)} 
             />
             <RadioScale 
-              label="Variasi Menu (Bagaimana Anda menilai variasi menu yang tersedia?)" 
+              label="3. Variasi Menu (Bagaimana Anda menilai variasi menu yang tersedia?)" 
               value={form.variasi_menu} 
               onChange={(v) => handleChange("variasi_menu", v)} 
             />
             <RadioScale 
-              label="Ketersediaan / Porsi Makanan (Bagaimana Anda menilai ketersediaan dan porsi makanan?)" 
+              label="4. Ketersediaan / Porsi Makanan (Bagaimana Anda menilai ketersediaan dan porsi makanan?)" 
               value={form.porsi_makanan} 
               onChange={(v) => handleChange("porsi_makanan", v)} 
             />
             <RadioScale 
-              label="Ketepatan Waktu Pelayanan (Bagaimana Anda menilai ketepatan waktu penyediaan makanan?)" 
+              label="5. Ketepatan Waktu Pelayanan (Bagaimana Anda menilai ketepatan waktu penyediaan makanan?)" 
               value={form.ketepatan_waktu} 
               onChange={(v) => handleChange("ketepatan_waktu", v)} 
             />
             <RadioScale 
-              label="Kebersihan Area Kantin (Bagaimana Anda menilai kebersihan dan kenyamanan area kantin?)" 
+              label="6. Kebersihan Area Kantin (Bagaimana Anda menilai kebersihan dan kenyamanan area kantin?)" 
               value={form.kebersihan_area} 
               onChange={(v) => handleChange("kebersihan_area", v)} 
             />
             <RadioScale 
-              label="Sikap / Keramahan Petugas (Bagaimana Anda menilai sikap dan keramahan petugas kantin/catering?)" 
+              label="7. Sikap Petugas Kantin/Catering (Bagaimana Anda menilai sikap dan keramahan petugas kantin/catering?)" 
               value={form.sikap_petugas} 
               onChange={(v) => handleChange("sikap_petugas", v)} 
             />
             <RadioScale 
-              label="Respons terhadap Masukan (Bagaimana respons vendor terhadap masukan atau keluhan?)" 
+              label="8. Respons terhadap Masukan (Bagaimana respons vendor terhadap masukan atau keluhan?)" 
               value={form.respons_masukan} 
               onChange={(v) => handleChange("respons_masukan", v)} 
             />
@@ -180,16 +184,16 @@ export default function FormKantin() {
 
         <div className="border-t pt-6 pb-2">
           <div className="bg-white p-5 border border-slate-200 rounded-xl shadow-sm">
-            <h2 className="font-bold text-slate-800 text-center mb-2">Kepuasan Keseluruhan</h2>
-            <p className="text-sm text-slate-600 text-center mb-4">Secara keseluruhan, bagaimana kepuasan Anda terhadap layanan Kantin/Catering GA?</p>
-            <div className="flex justify-center">
+            <h2 className="font-bold text-slate-800 mb-2">9. Kepuasan Keseluruhan</h2>
+            <p className="text-sm text-slate-600 mb-4">Secara keseluruhan, bagaimana kepuasan Anda terhadap layanan Kantin/Catering GA?</p>
+            <div className="flex">
               <StarRating value={form.kepuasan_keseluruhan} onChange={(v) => handleChange("kepuasan_keseluruhan", v)} />
             </div>
           </div>
         </div>
 
         <div className="border-t pt-6 flex flex-col gap-4">
-          <h2 className="font-bold text-slate-800">Masukan dan Saran</h2>
+          <h2 className="font-bold text-slate-800">10. Masukan dan Saran</h2>
           
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">Hal yang sudah baik dan perlu dipertahankan:</label>

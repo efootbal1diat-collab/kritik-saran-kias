@@ -41,6 +41,9 @@ export default function FormPengemudi() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  const [selectedOption, setSelectedOption] = useState("");
+  const [manualDriverName, setManualDriverName] = useState("");
+
   const [form, setForm] = useState({
     nama_pengemudi: "",
     ketepatan_waktu: 0,
@@ -90,41 +93,62 @@ export default function FormPengemudi() {
 
   return (
     <div className="py-4 max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold text-blue-700 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN DRIVER / TRANSPORT GA</h1>
+      <h1 className="text-xl font-bold text-slate-800 mb-2 underline text-center">KUESIONER KEPUASAN LAYANAN DRIVER / TRANSPORT</h1>
       
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 mt-4">
-        <h2 className="font-semibold text-blue-800 mb-1">Tujuan:</h2>
-        <p className="text-sm text-blue-700 mb-3">Untuk mengetahui tingkat kepuasan pengguna terhadap layanan Driver/Transport GA serta mendapatkan masukan untuk peningkatan kualitas pelayanan.</p>
-        <h2 className="font-semibold text-blue-800 mb-1">Petunjuk Pengisian:</h2>
-        <p className="text-sm text-blue-700">Berikan penilaian sesuai pengalaman Anda menggunakan layanan Driver/Transport GA.</p>
+      <div className="bg-slate-100 border border-slate-200 p-4 rounded-xl mb-6 mt-4">
+        <h2 className="font-semibold text-slate-800 mb-1">Tujuan:</h2>
+        <p className="text-sm text-slate-700 mb-3">Untuk mengetahui tingkat kepuasan pengguna terhadap layanan Driver/Transport serta mendapatkan masukan untuk peningkatan kualitas pelayanan.</p>
+        <h2 className="font-semibold text-slate-800 mb-1">Petunjuk Pengisian:</h2>
+        <p className="text-sm text-slate-700">Berikan penilaian sesuai pengalaman Anda menggunakan layanan Driver/Transport.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold text-slate-800">Pilih Driver:</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
             {DRIVERS.map((d) => (
               <label
                 key={d}
                 className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                  form.nama_pengemudi === d
+                  selectedOption === d
                     ? "border-blue-500 bg-blue-50"
                     : "border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-2 shrink-0 ${form.nama_pengemudi === d ? 'border-blue-500' : 'border-slate-300'}`}>
-                  {form.nama_pengemudi === d && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />}
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-2 shrink-0 ${selectedOption === d ? 'border-blue-500' : 'border-slate-300'}`}>
+                  {selectedOption === d && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />}
                 </div>
                 <input
                   type="radio"
                   className="hidden"
-                  checked={form.nama_pengemudi === d}
-                  onChange={() => handleChange("nama_pengemudi", d)}
+                  checked={selectedOption === d}
+                  onChange={() => {
+                    setSelectedOption(d);
+                    if (d !== "Lainnya...") {
+                      handleChange("nama_pengemudi", d);
+                    } else {
+                      handleChange("nama_pengemudi", manualDriverName);
+                    }
+                  }}
                 />
-                <span className={`text-sm font-medium ${form.nama_pengemudi === d ? 'text-blue-900' : 'text-slate-700'}`}>{d}</span>
+                <span className={`text-sm font-medium ${selectedOption === d ? 'text-blue-900' : 'text-slate-700'}`}>{d}</span>
               </label>
             ))}
           </div>
+
+          {selectedOption === "Lainnya..." && (
+            <input
+              type="text"
+              placeholder="Tuliskan nama driver di sini..."
+              className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              value={manualDriverName}
+              onChange={(e) => {
+                setManualDriverName(e.target.value);
+                handleChange("nama_pengemudi", e.target.value);
+              }}
+              required
+            />
+          )}
         </div>
 
         <div className="mt-4">
@@ -194,7 +218,7 @@ export default function FormPengemudi() {
             <textarea
               rows={3}
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-              placeholder="...................................................................................................."
+              placeholder="Tuliskan masukan positif Anda di sini..."
               value={form.saran_baik}
               onChange={(e) => handleChange("saran_baik", e.target.value)}
             />
@@ -205,7 +229,7 @@ export default function FormPengemudi() {
             <textarea
               rows={3}
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-              placeholder="...................................................................................................."
+              placeholder="Tuliskan saran perbaikan Anda di sini..."
               value={form.saran_perbaikan}
               onChange={(e) => handleChange("saran_perbaikan", e.target.value)}
             />

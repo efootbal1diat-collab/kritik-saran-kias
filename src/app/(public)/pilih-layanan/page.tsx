@@ -4,16 +4,33 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Car, Utensils, ShieldCheck, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { ensureServicesSeeded } from "@/lib/seedServices";
 
 export default function PilihLayananPage() {
-  const [dynamicServices, setDynamicServices] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchServices = async () => {
-      const { data, error } = await supabase.from("services").select("*").eq("is_active", true).order("created_at", { ascending: true });
+      await ensureServicesSeeded();
+      const { data, error } = await supabase
+        .from("services")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: true });
+        
       if (!error && data) {
-        setDynamicServices(data);
+        // Sort services to ensure system services are always A, B, C
+        const sorted = [...data].sort((a, b) => {
+          const order = ["Layanan Pengemudi", "Layanan Kantin / Catering", "Layanan Security"];
+          const idxA = order.indexOf(a.name);
+          const idxB = order.indexOf(b.name);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setServices(sorted);
       }
       setLoading(false);
     };
@@ -22,84 +39,80 @@ export default function PilihLayananPage() {
   }, []);
 
   const renderIcon = (iconStr: string) => {
-    if (iconStr === "Car") return <Car className="w-6 h-6" />;
-    if (iconStr === "Utensils") return <Utensils className="w-6 h-6" />;
-    if (iconStr === "ShieldCheck") return <ShieldCheck className="w-6 h-6" />;
-    return <AlertCircle className="w-6 h-6" />;
+    if (iconStr === "Car") return <Car className="w-6 h-6 text-blue-600" />;
+    if (iconStr === "Utensils") return (
+      <svg className="w-8 h-8 text-orange-600" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10.2" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="12" cy="12" r="7.6" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+        <path
+          fill="currentColor"
+          d="M7.2 6.5h0.9v3.5h0.8V6.5h0.9v3.5h0.8V6.5h0.9v3.8c0 1.1-.7 1.8-1.6 2.0V17.5h-1.2v-5.2c-.9-.2-1.6-.9-1.6-2.0V6.5z"
+        />
+        <path
+          fill="currentColor"
+          d="M14.8 6.5c-1.4 0-2.3 1.3-2.3 3.1 0 1.3.7 2.3 1.7 2.7v5.2h1.2v-5.2c1-.4 1.7-1.4 1.7-2.7 0-1.8-.9-3.1-2.3-3.1z"
+        />
+      </svg>
+    );
+    if (iconStr === "ShieldCheck") return <ShieldCheck className="w-6 h-6 text-green-600" />;
+    return <AlertCircle className="w-6 h-6 text-slate-600" />;
+  };
+
+  const getBadgeColor = (iconStr: string) => {
+    if (iconStr === "Car") return "bg-blue-100";
+    if (iconStr === "Utensils") return "bg-orange-100";
+    if (iconStr === "ShieldCheck") return "bg-green-100";
+    return "bg-slate-100";
+  };
+
+  const getBorderColorHover = (iconStr: string) => {
+    if (iconStr === "Car") return "hover:border-blue-300";
+    if (iconStr === "Utensils") return "hover:border-orange-300";
+    if (iconStr === "ShieldCheck") return "hover:border-green-300";
+    return "hover:border-indigo-300";
+  };
+
+  const getCleanDescription = (desc: string) => {
+    if (!desc) return "Survey kepuasan layanan GA";
+    try {
+      if (desc.startsWith("{")) {
+        const parsed = JSON.parse(desc);
+        return parsed.desc || "Survey kepuasan layanan GA";
+      }
+    } catch (e) {}
+    return desc;
   };
 
   return (
-    <div className="flex flex-col py-6">
-      <h1 className="text-xl font-bold text-slate-800 mb-6 text-center">
+    <div className="flex flex-col py-6 font-sans">
+      <h1 className="text-xl font-bold text-slate-800 mb-2 text-center">
         Pilih Layanan
       </h1>
       <p className="text-center text-slate-600 mb-8 text-sm">
         Layanan manakah yang ingin Anda nilai hari ini?
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Layanan Utama / Baku */}
-        <Link
-          href="/form/pengemudi"
-          className="flex items-start p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 transition-all active:scale-95 h-full"
-        >
-          <div className="bg-blue-100 p-3 rounded-xl text-blue-600 mr-4 shrink-0">
-            <Car className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-slate-800 text-lg">A. Layanan Pengemudi</h2>
-            <p className="text-sm text-slate-500 mt-1">Survey kepuasan layanan driver</p>
-          </div>
-        </Link>
-
-        <Link
-          href="/form/kantin"
-          className="flex items-start p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-orange-300 transition-all active:scale-95 h-full"
-        >
-          <div className="bg-orange-100 p-3 rounded-xl text-orange-600 mr-4 shrink-0">
-            <Utensils className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-slate-800 text-lg">B. Layanan Kantin/Catering</h2>
-            <p className="text-sm text-slate-500 mt-1">Survey kebersihan & rasa makanan</p>
-          </div>
-        </Link>
-
-        <Link
-          href="/form/security"
-          className="flex items-start p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-green-300 transition-all active:scale-95 h-full"
-        >
-          <div className="bg-green-100 p-3 rounded-xl text-green-600 mr-4 shrink-0">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-slate-800 text-lg">C. Layanan Security</h2>
-            <p className="text-sm text-slate-500 mt-1">Survey profesionalisme & tanggap darurat</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* Layanan Tambahan (Dinamis) */}
-      {!loading && dynamicServices.length > 0 && (
-        <div className="mt-8 pt-8 border-t border-slate-200">
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider text-center mb-6">Layanan Lainnya</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dynamicServices.map((service) => (
-              <Link
-                key={service.id}
-                href={`/services/${service.id}`}
-                className="flex items-start p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all active:scale-95 h-full"
-              >
-                <div className="bg-indigo-50 p-3 rounded-xl text-indigo-600 mr-4 shrink-0">
-                  {renderIcon(service.icon_type)}
-                </div>
-                <div>
-                  <h2 className="font-semibold text-slate-800 text-lg">{service.name}</h2>
-                  <p className="text-sm text-slate-500 mt-1">{service.description || "Survey layanan tambahan"}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+      {loading ? (
+        <p className="text-center text-slate-500 py-10">Memuat daftar layanan...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {services.map((service, index) => (
+            <Link
+              key={service.id}
+              href={`/services/${service.id}`}
+              className={`flex items-start p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md ${getBorderColorHover(service.icon_type)} transition-all duration-300 ease-in-out hover:-translate-y-1 active:scale-95 h-full`}
+            >
+              <div className={`p-3 rounded-xl ${getBadgeColor(service.icon_type)} mr-4 shrink-0 flex items-center justify-center`}>
+                {renderIcon(service.icon_type)}
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg">
+                  {String.fromCharCode(65 + index)}. {service.name}
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">{getCleanDescription(service.description)}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>
