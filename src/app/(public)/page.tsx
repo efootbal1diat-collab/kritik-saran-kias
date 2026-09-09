@@ -10,10 +10,11 @@ export default function WelcomePage() {
   const [plant, setPlant] = useState("");
 
   useEffect(() => {
-    const savedName = sessionStorage.getItem("pekerjaan");
-    const savedPlant = sessionStorage.getItem("plant");
-    if (savedName) setPekerjaan(savedName);
-    if (savedPlant) setPlant(savedPlant);
+    // Reset dan hapus sesi sebelumnya agar form selalu bersih saat dibuka/direfresh
+    sessionStorage.removeItem("pekerjaan");
+    sessionStorage.removeItem("plant");
+    setPekerjaan("");
+    setPlant("");
   }, []);
 
   const handleNext = (e: React.FormEvent) => {
@@ -44,7 +45,7 @@ export default function WelcomePage() {
         Silakan isi nama anonim dan pilih plant lokasi Anda sebelum mengisi survei.
       </p>
 
-      <form onSubmit={handleNext} className="w-full max-w-sm">
+      <form onSubmit={handleNext} autoComplete="off" className="w-full max-w-sm">
         {/* Input Nama Anonim */}
         <div className="mb-5">
           <label htmlFor="pekerjaan" className="block text-sm font-medium text-slate-700 mb-2">
@@ -57,6 +58,7 @@ export default function WelcomePage() {
             onChange={(e) => setPekerjaan(e.target.value)}
             placeholder="Ketik nama anonim..."
             required
+            autoComplete="off"
             className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-300 ease-in-out"
           />
         </div>
