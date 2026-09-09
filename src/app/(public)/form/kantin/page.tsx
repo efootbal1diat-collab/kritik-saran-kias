@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { StarRating } from "@/components/StarRating";
 
-const KANTIN = ["Kantin A (Bu Ratna)", "Kantin B (Bu Saminem)", "Kantin C (Bu Sumini)", "Catering / Vendor"];
+const KANTIN = ["Kantin A", "Kantin B", "Kantin C", "Catering / Vendor"];
 
 // Komponen Radio Button 1-4 Khusus Skala Penilaian
 function RadioScale({ label, value, onChange }: { label: string, value: number, onChange: (val: number) => void }) {

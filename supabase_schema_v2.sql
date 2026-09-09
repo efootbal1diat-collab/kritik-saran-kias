@@ -35,6 +35,8 @@ CREATE TABLE public.responses (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     service_id uuid REFERENCES public.services(id) ON DELETE CASCADE,
     respondent_name text,
+    vendor_name text,
+    plant text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

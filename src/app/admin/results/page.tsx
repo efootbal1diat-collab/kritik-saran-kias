@@ -155,7 +155,7 @@ export default function AdminResults() {
     const activeObj = services.find(s => s.id === activeTab);
     const serviceName = activeObj?.name || "Survey";
 
-    let headers = ["Tanggal", "Responden", "Target / Vendor"];
+    let headers = ["Tanggal", "Responden", "Plant", "Target / Vendor"];
     dynamicQuestions.forEach(q => {
       const shortLabel = q.question_text.replace(/\s*\(.*?\)\s*/g, "");
       headers.push(`"${shortLabel}"`);
@@ -167,6 +167,7 @@ export default function AdminResults() {
       let rowVals = [
         `"${new Date(row.created_at).toLocaleDateString("id-ID")}"`,
         `"${row.respondent_name || '-'}"`,
+        `"${row.plant || '-'}"`,
         `"${row.vendor_name || '-'}"`
       ];
 
@@ -302,6 +303,7 @@ export default function AdminResults() {
                     <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
                       <th className="py-3.5 px-4">Waktu</th>
                       <th className="py-3.5 px-4">Responden</th>
+                      <th className="py-3.5 px-4">Plant</th>
                       <th className="py-3.5 px-4">Target / Vendor</th>
                       {dynamicQuestions.map((q) => (
                         <th key={q.id} className="py-3.5 px-4 min-w-[150px]">
@@ -324,6 +326,21 @@ export default function AdminResults() {
                         </td>
                         <td className="py-3.5 px-4 font-medium text-slate-900">
                           {row.respondent_name || "Anonim"}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {row.plant ? (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                              row.plant === "KIAS 1"
+                                ? "bg-blue-100 text-blue-800"
+                                : row.plant === "KIAS 2"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-slate-100 text-slate-700"
+                            }`}>
+                              {row.plant}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">-</span>
+                          )}
                         </td>
                         <td className="py-3.5 px-4 font-semibold text-blue-700">
                           {row.vendor_name || "-"}

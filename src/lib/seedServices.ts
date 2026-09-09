@@ -58,7 +58,7 @@ export async function ensureServicesSeeded() {
 
     if (kantinSrv) {
       await supabase.from("questions").insert([
-        { service_id: kantinSrv.id, question_text: "Pilih Kantin / Vendor:", question_type: "radio", options_json: ["Kantin A (Bu Ratna)", "Kantin B (Bu Saminem)", "Kantin C (Bu Sumini)", "Catering / Vendor"], order_number: 1, is_required: true },
+        { service_id: kantinSrv.id, question_text: "Pilih Kantin / Vendor:", question_type: "radio", options_json: ["Kantin A", "Kantin B", "Kantin C", "Catering / Vendor"], order_number: 1, is_required: true },
         { service_id: kantinSrv.id, question_text: "1. Kualitas Rasa Makanan (Bagaimana Anda menilai kualitas rasa makanan yang disediakan?)", question_type: "radio", options_json: scaleOptions, order_number: 2, is_required: true },
         { service_id: kantinSrv.id, question_text: "2. Kebersihan & Higiene Makanan (Bagaimana Anda menilai kebersihan makanan dan penyajiannya?)", question_type: "radio", options_json: scaleOptions, order_number: 3, is_required: true },
         { service_id: kantinSrv.id, question_text: "3. Variasi Menu (Bagaimana Anda menilai variasi menu yang tersedia?)", question_type: "radio", options_json: scaleOptions, order_number: 4, is_required: true },

@@ -121,7 +121,7 @@ export default function DynamicServiceForm() {
         id: "fallback-kantin",
         question_text: "Pilih Kantin / Vendor:",
         question_type: "radio",
-        options_json: ["Kantin A (Bu Ratna)", "Kantin B (Bu Saminem)", "Kantin C (Bu Sumini)", "Catering / Vendor"],
+        options_json: ["Kantin A", "Kantin B", "Kantin C", "Catering / Vendor"],
         is_required: true
       };
     }
@@ -170,6 +170,7 @@ export default function DynamicServiceForm() {
 
     try {
       const respondentName = sessionStorage.getItem("pekerjaan") || "Anonim";
+      const plant = sessionStorage.getItem("plant") || null;
       const finalTargetValue = targetQuestion 
         ? (answers[targetQuestion.id] === "Lainnya..." ? customTargetText : answers[targetQuestion.id]?.toString())
         : null;
@@ -178,7 +179,8 @@ export default function DynamicServiceForm() {
       const { data: respData, error: respErr } = await supabase.from("responses").insert([{
         service_id: id,
         respondent_name: respondentName,
-        vendor_name: finalTargetValue
+        vendor_name: finalTargetValue,
+        plant: plant
       }]).select().single();
 
       if (respErr) throw respErr;
