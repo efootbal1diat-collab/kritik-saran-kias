@@ -44,6 +44,7 @@ interface ComplaintItem {
   category: string;
   badgeBg: string;
   badgeText: string;
+  plant?: string | null;
   text: string;
   date: string;
 }
@@ -56,6 +57,7 @@ export default function AdminDashboard() {
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [activeServiceId, setActiveServiceId] = useState<string>("");
+  const [selectedPlant, setSelectedPlant] = useState<string>("ALL");
 
   // Dynamic Metrics State
   const [totalRespondents, setTotalRespondents] = useState(0);
@@ -79,9 +81,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeServiceId) {
-      fetchServiceMetrics(activeServiceId);
+      fetchServiceMetrics(activeServiceId, selectedPlant);
     }
-  }, [activeServiceId]);
+  }, [activeServiceId, selectedPlant]);
 
   const fetchServices = async () => {
     setLoading(true);
@@ -118,7 +120,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchServiceMetrics = async (serviceId: string) => {
+  const fetchServiceMetrics = async (serviceId: string, plantFilter: string = selectedPlant) => {
     try {
       const activeObj = services.find(s => s.id === serviceId);
       const serviceName = activeObj?.name || "Layanan";
@@ -126,10 +128,16 @@ export default function AdminDashboard() {
       const complaintsList: ComplaintItem[] = [];
 
       // 1. Fetch Dynamic Responses & Answers from DB
-      const { data: responses } = await supabase
+      let query = supabase
         .from("responses")
-        .select("id, respondent_name, vendor_name, created_at")
+        .select("id, respondent_name, vendor_name, plant, created_at")
         .eq("service_id", serviceId);
+
+      if (plantFilter !== "ALL") {
+        query = query.eq("plant", plantFilter);
+      }
+
+      const { data: responses } = await query;
 
       const responseIds = responses ? responses.map(r => r.id) : [];
 
@@ -205,6 +213,7 @@ export default function AdminDashboard() {
                 category: serviceName,
                 badgeBg: "bg-blue-100 text-blue-700",
                 badgeText: resp?.vendor_name || resp?.respondent_name || "Responden",
+                plant: resp?.plant || null,
                 text: a.answer_value,
                 date: a.created_at ? new Date(a.created_at).toLocaleDateString("id-ID") : "Baru saja",
               });
@@ -213,73 +222,75 @@ export default function AdminDashboard() {
         });
       }
 
-      // Check legacy table fallback if applicable
+      // Check legacy table fallback if applicable (only when plant filter is ALL)
       let legacyCount = 0;
       let legacyOverallSum = 0;
       let legacyOverallCount = 0;
 
-      if (serviceName.includes("Pengemudi") || serviceName.includes("Driver")) {
-        const { data: legacyData } = await supabase.from("survey_pengemudi").select("*");
-        if (legacyData && legacyData.length > 0) {
-          legacyCount = legacyData.length;
-          legacyData.forEach((item, idx) => {
-            if (item.kepuasan_keseluruhan) {
-              legacyOverallSum += item.kepuasan_keseluruhan;
-              legacyOverallCount++;
-            }
-            if (item.saran_perbaikan && item.saran_perbaikan.trim().length > 0) {
-              complaintsList.push({
-                id: `leg-drv-${idx}`,
-                category: serviceName,
-                badgeBg: "bg-blue-100 text-blue-700",
-                badgeText: item.nama_pengemudi || "Pengemudi",
-                text: item.saran_perbaikan,
-                date: item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "Baru saja",
-              });
-            }
-          });
-        }
-      } else if (serviceName.includes("Kantin") || serviceName.includes("Catering")) {
-        const { data: legacyData } = await supabase.from("survey_kantin").select("*");
-        if (legacyData && legacyData.length > 0) {
-          legacyCount = legacyData.length;
-          legacyData.forEach((item, idx) => {
-            if (item.kepuasan_keseluruhan) {
-              legacyOverallSum += item.kepuasan_keseluruhan;
-              legacyOverallCount++;
-            }
-            if (item.saran_perbaikan && item.saran_perbaikan.trim().length > 0) {
-              complaintsList.push({
-                id: `leg-ktn-${idx}`,
-                category: serviceName,
-                badgeBg: "bg-amber-100 text-amber-800",
-                badgeText: item.nama_kantin || "Kantin",
-                text: item.saran_perbaikan,
-                date: item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "Baru saja",
-              });
-            }
-          });
-        }
-      } else if (serviceName.includes("Security")) {
-        const { data: legacyData } = await supabase.from("survey_security").select("*");
-        if (legacyData && legacyData.length > 0) {
-          legacyCount = legacyData.length;
-          legacyData.forEach((item, idx) => {
-            if (item.kepuasan_keseluruhan) {
-              legacyOverallSum += item.kepuasan_keseluruhan;
-              legacyOverallCount++;
-            }
-            if (item.saran_perbaikan && item.saran_perbaikan.trim().length > 0) {
-              complaintsList.push({
-                id: `leg-sec-${idx}`,
-                category: serviceName,
-                badgeBg: "bg-emerald-100 text-emerald-800",
-                badgeText: item.pos_security || "Security",
-                text: item.saran_perbaikan,
-                date: item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "Baru saja",
-              });
-            }
-          });
+      if (plantFilter === "ALL") {
+        if (serviceName.includes("Pengemudi") || serviceName.includes("Driver")) {
+          const { data: legacyData } = await supabase.from("survey_pengemudi").select("*");
+          if (legacyData && legacyData.length > 0) {
+            legacyCount = legacyData.length;
+            legacyData.forEach((item, idx) => {
+              if (item.kepuasan_keseluruhan) {
+                legacyOverallSum += item.kepuasan_keseluruhan;
+                legacyOverallCount++;
+              }
+              if (item.saran_perbaikan && item.saran_perbaikan.trim().length > 0) {
+                complaintsList.push({
+                  id: `leg-drv-${idx}`,
+                  category: serviceName,
+                  badgeBg: "bg-blue-100 text-blue-700",
+                  badgeText: item.nama_pengemudi || "Pengemudi",
+                  text: item.saran_perbaikan,
+                  date: item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "Baru saja",
+                });
+              }
+            });
+          }
+        } else if (serviceName.includes("Kantin") || serviceName.includes("Catering")) {
+          const { data: legacyData } = await supabase.from("survey_kantin").select("*");
+          if (legacyData && legacyData.length > 0) {
+            legacyCount = legacyData.length;
+            legacyData.forEach((item, idx) => {
+              if (item.kepuasan_keseluruhan) {
+                legacyOverallSum += item.kepuasan_keseluruhan;
+                legacyOverallCount++;
+              }
+              if (item.saran_perbaikan && item.saran_perbaikan.trim().length > 0) {
+                complaintsList.push({
+                  id: `leg-ktn-${idx}`,
+                  category: serviceName,
+                  badgeBg: "bg-amber-100 text-amber-800",
+                  badgeText: item.nama_kantin || "Kantin",
+                  text: item.saran_perbaikan,
+                  date: item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "Baru saja",
+                });
+              }
+            });
+          }
+        } else if (serviceName.includes("Security")) {
+          const { data: legacyData } = await supabase.from("survey_security").select("*");
+          if (legacyData && legacyData.length > 0) {
+            legacyCount = legacyData.length;
+            legacyData.forEach((item, idx) => {
+              if (item.kepuasan_keseluruhan) {
+                legacyOverallSum += item.kepuasan_keseluruhan;
+                legacyOverallCount++;
+              }
+              if (item.saran_perbaikan && item.saran_perbaikan.trim().length > 0) {
+                complaintsList.push({
+                  id: `leg-sec-${idx}`,
+                  category: serviceName,
+                  badgeBg: "bg-emerald-100 text-emerald-800",
+                  badgeText: item.pos_security || "Security",
+                  text: item.saran_perbaikan,
+                  date: item.created_at ? new Date(item.created_at).toLocaleDateString("id-ID") : "Baru saja",
+                });
+              }
+            });
+          }
         }
       }
 
@@ -505,10 +516,10 @@ export default function AdminDashboard() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
           
-          {/* Dynamic Tab Selector */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs flex flex-wrap items-center gap-4">
-            <span className="text-sm font-bold text-gray-700 shrink-0">Pilih Layanan GA:</span>
-            <div className="flex flex-wrap gap-2">
+          {/* Dynamic Tab Selector & Plant Filter */}
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-bold text-gray-700 shrink-0 mr-1">Pilih Layanan GA:</span>
               {loading ? (
                 <span className="text-sm text-gray-400">Memuat layanan...</span>
               ) : (
@@ -516,7 +527,7 @@ export default function AdminDashboard() {
                   <button
                     key={service.id}
                     onClick={() => setActiveServiceId(service.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
                       activeServiceId === service.id
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -527,13 +538,58 @@ export default function AdminDashboard() {
                 ))
               )}
             </div>
+
+            {/* Plant Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0 self-start md:self-auto">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Plant:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedPlant("ALL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedPlant === "ALL"
+                    ? "bg-white text-blue-700 shadow-xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Semua
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPlant("KIAS 1")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedPlant === "KIAS 1"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                KIAS 1
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPlant("KIAS 2")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedPlant === "KIAS 2"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                KIAS 2
+              </button>
+            </div>
           </div>
 
           {/* 1. Ringkasan Kepuasan Layanan */}
           <section className="bg-white p-6 rounded-xl border border-gray-200 shadow-xs">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-gray-900">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 1. Ringkasan Kepuasan {activeName}
+                {selectedPlant !== "ALL" && (
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                    selectedPlant === "KIAS 1" ? "bg-blue-100 text-blue-800" : "bg-emerald-100 text-emerald-800"
+                  }`}>
+                    {selectedPlant}
+                  </span>
+                )}
               </h2>
               <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-md">
                 Live Data Overview
@@ -661,11 +717,24 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {realComplaints.map((item) => (
                   <div key={item.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-md ${item.badgeBg}`}>
-                        {item.badgeText}
-                      </span>
-                      <span className="text-[11px] font-bold text-gray-400">{item.date}</span>
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-md ${item.badgeBg}`}>
+                          {item.badgeText}
+                        </span>
+                        {item.plant && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                            item.plant === "KIAS 1"
+                              ? "bg-blue-100 text-blue-800"
+                              : item.plant === "KIAS 2"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-slate-200 text-slate-700"
+                          }`}>
+                            {item.plant}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] font-bold text-gray-400 shrink-0">{item.date}</span>
                     </div>
                     <p className="text-sm font-medium text-gray-800 line-clamp-3">&quot;{item.text}&quot;</p>
                   </div>
