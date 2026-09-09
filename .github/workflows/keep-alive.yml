@@ -6,10 +6,16 @@ on:
     - cron: '0 0 */2 * *'
   workflow_dispatch: # Memungkinkan tombol 'Run workflow' manual di tab Actions GitHub
 
+permissions:
+  contents: write
+
 jobs:
-  ping-supabase:
+  keep-alive:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Ping Supabase Database
         run: |
           echo "Mengirim ping ke Supabase..."
@@ -24,4 +30,20 @@ jobs:
           else
             echo "Peringatan: Respons HTTP $HTTP_STATUS"
             exit 1
+          fi
+
+      - name: Auto-Commit Heartbeat (Awal Bulan)
+        run: |
+          DAY_OF_MONTH=$(date -u +%d)
+          echo "Hari dalam bulan saat ini: $DAY_OF_MONTH"
+          # Jalankan commit otomatis hanya jika tanggal 1 atau 2 setiap bulan
+          if [ "$DAY_OF_MONTH" -le 2 ]; then
+            echo "Menjalankan pembaruan heartbeat bulanan..."
+            date -u +"Last keep-alive heartbeat: %Y-%m-%d %H:%M:%S UTC" > .github/heartbeat.txt
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add .github/heartbeat.txt
+            git diff --staged --quiet || (git commit -m "chore: keep-alive heartbeat [skip ci]" && git push)
+          else
+            echo "Bukan awal bulan, lewati commit heartbeat."
           fi
