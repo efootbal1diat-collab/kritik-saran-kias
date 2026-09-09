@@ -1,0 +1,27 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Berjalan otomatis setiap 2 hari sekali pada pukul 00:00 UTC
+    - cron: '0 0 */2 * *'
+  workflow_dispatch: # Memungkinkan tombol 'Run workflow' manual di tab Actions GitHub
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          echo "Mengirim ping ke Supabase..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://dtfjwcojrfsulfqyhubq.supabase.co/rest/v1/services?select=id&limit=1" \
+            -H "apikey: sb_publishable_lSnrOfDZmn2B7-3dVgKIRw_tCRxDyhz" \
+            -H "Authorization: Bearer sb_publishable_lSnrOfDZmn2B7-3dVgKIRw_tCRxDyhz")
+          
+          echo "Kode respons HTTP dari Supabase: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "Berhasil! Supabase aktif dan timer 7 hari ter-reset."
+          else
+            echo "Peringatan: Respons HTTP $HTTP_STATUS"
+            exit 1
+          fi
