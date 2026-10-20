@@ -2,8 +2,8 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # Berjalan otomatis setiap 2 hari sekali pada pukul 00:00 UTC
-    - cron: '0 0 */2 * *'
+    # Berjalan otomatis setiap hari pada pukul 02:00 UTC (09:00 WIB)
+    - cron: '0 2 * * *'
   workflow_dispatch: # Memungkinkan tombol 'Run workflow' manual di tab Actions GitHub
 
 permissions:
@@ -16,27 +16,40 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Ping Supabase Database
+      - name: Ping Supabase Database (Write & Read Activity)
         run: |
-          echo "Mengirim ping ke Supabase..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          echo "Memulai keep-alive heartbeat ke Supabase..."
+          ISO_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          echo "1. Mengirim write transaction (update heartbeat timestamp)..."
+          HTTP_WRITE=$(curl -s -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 5 \
+            -X PATCH "https://dtfjwcojrfsulfqyhubq.supabase.co/rest/v1/admin_settings?id=eq.1" \
+            -H "apikey: sb_publishable_lSnrOfDZmn2B7-3dVgKIRw_tCRxDyhz" \
+            -H "Authorization: Bearer sb_publishable_lSnrOfDZmn2B7-3dVgKIRw_tCRxDyhz" \
+            -H "Content-Type: application/json" \
+            -d "{\"updated_at\": \"$ISO_TIME\"}")
+          echo "Status respons Write HTTP: $HTTP_WRITE"
+
+          echo "2. Mengirim read transaction (query services)..."
+          HTTP_READ=$(curl -s -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 5 \
             "https://dtfjwcojrfsulfqyhubq.supabase.co/rest/v1/services?select=id&limit=1" \
             -H "apikey: sb_publishable_lSnrOfDZmn2B7-3dVgKIRw_tCRxDyhz" \
             -H "Authorization: Bearer sb_publishable_lSnrOfDZmn2B7-3dVgKIRw_tCRxDyhz")
-          
-          echo "Kode respons HTTP dari Supabase: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
-            echo "Berhasil! Supabase aktif dan timer 7 hari ter-reset."
+          echo "Status respons Read HTTP: $HTTP_READ"
+
+          if ([ "$HTTP_WRITE" -ge 200 ] && [ "$HTTP_WRITE" -lt 400 ]) || ([ "$HTTP_READ" -ge 200 ] && [ "$HTTP_READ" -lt 400 ]); then
+            echo "Berhasil! Aktivitas PostgreSQL terdeteksi (Write: $HTTP_WRITE, Read: $HTTP_READ). Timer inaktivitas Supabase ter-reset."
           else
-            echo "Peringatan: Respons HTTP $HTTP_STATUS"
+            echo "Peringatan: Gagal menghubungi Supabase (Write: $HTTP_WRITE, Read: $HTTP_READ)"
             exit 1
           fi
 
       - name: Auto-Commit Heartbeat (Awal Bulan)
+        if: always()
         run: |
           DAY_OF_MONTH=$(date -u +%d)
           echo "Hari dalam bulan saat ini: $DAY_OF_MONTH"
-          # Jalankan commit otomatis hanya jika tanggal 1 atau 2 setiap bulan
+          # Jalankan commit otomatis hanya jika tanggal 1 atau 2 setiap bulan untuk menjaga GitHub Actions tetap aktif
           if [ "$DAY_OF_MONTH" -le 2 ]; then
             echo "Menjalankan pembaruan heartbeat bulanan..."
             date -u +"Last keep-alive heartbeat: %Y-%m-%d %H:%M:%S UTC" > .github/heartbeat.txt
